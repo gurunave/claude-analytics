@@ -1,6 +1,6 @@
 /**
- * Reads Claude Code's local session transcripts and flattens them into
- * normalized records the analytics layer can aggregate.
+ * Reads Claude Code session transcripts and flattens them into normalized
+ * records the analytics layer can aggregate.
  *
  * Transcripts live at ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl, one
  * JSON object per line. The lines we care about:
@@ -12,6 +12,9 @@
  *
  * Every line also carries sessionId, timestamp, cwd, gitBranch, version, and
  * (on assistant lines) requestId and effort.
+ *
+ * Two entry points share one line-processing implementation: loadUsage() walks
+ * the filesystem, parseTranscriptText() handles an uploaded file body.
  */
 
 import { createReadStream } from 'node:fs';
@@ -83,17 +86,20 @@ function hasThinking(content) {
 }
 
 /**
- * Parse one transcript file into { turns, sessionMeta }.
+ * Stateful per-transcript accumulator. Feed it raw lines; read `turns` and
+ * `session` when done.
  *
- * Assistant entries are deduplicated by requestId: a single API request can be
- * written to the transcript more than once (streaming reconnects, retries), and
- * counting both would double-bill the session.
+ * The subtle part is request deduplication: one API request is written as
+ * several assistant lines — one per content block (thinking, text, tool_use) —
+ * all carrying the same requestId and an *identical* usage object. Billing per
+ * line double-counts cost; keeping only the first line drops most tool calls.
+ * So we bill once per request and merge content across all of its lines.
  */
-async function parseFile({ file, projectPath, projectDir }) {
+function createAccumulator({ id, file = null, projectDir = null, projectPath = null }) {
   const turns = [];
   const seenRequests = new Map();
   const session = {
-    id: path.basename(file, '.jsonl'),
+    id,
     file,
     projectDir,
     projectPath,
@@ -110,17 +116,14 @@ async function parseFile({ file, projectPath, projectDir }) {
     end: null,
   };
 
-  const stream = createReadStream(file, { encoding: 'utf8' });
-  const lines = createInterface({ input: stream, crlfDelay: Infinity });
-
-  for await (const line of lines) {
-    if (!line.trim()) continue;
+  function pushLine(line) {
+    if (!line.trim()) return;
     let entry;
     try {
       entry = JSON.parse(line);
     } catch {
       session.parseErrors += 1;
-      continue;
+      return;
     }
 
     if (entry.cwd) session.cwd = entry.cwd;
@@ -128,6 +131,8 @@ async function parseFile({ file, projectPath, projectDir }) {
     if (entry.version) session.version = entry.version;
     if (entry.entrypoint) session.entrypoint = entry.entrypoint;
     if (entry.toolDenialKind) session.toolDenials += 1;
+    // An uploaded file may be named anything; trust the transcript's own id.
+    if (entry.sessionId && session.id === null) session.id = entry.sessionId;
 
     const ts = entry.timestamp ? Date.parse(entry.timestamp) : NaN;
     if (Number.isFinite(ts)) {
@@ -138,8 +143,7 @@ async function parseFile({ file, projectPath, projectDir }) {
     if (entry.type === 'user') {
       // Sidechain entries are subagent traffic; tool results are not prompts.
       const content = entry.message?.content;
-      const isToolResult =
-        Array.isArray(content) && content.some((b) => b?.type === 'tool_result');
+      const isToolResult = Array.isArray(content) && content.some((b) => b?.type === 'tool_result');
       if (!isToolResult && !entry.isMeta) {
         session.userMessages += 1;
         if (session.firstPrompt === null && typeof content === 'string') {
@@ -147,27 +151,23 @@ async function parseFile({ file, projectPath, projectDir }) {
         }
       }
       if (entry.interruptedByShutdown) session.interrupts += 1;
-      continue;
+      return;
     }
 
-    if (entry.type !== 'assistant') continue;
+    if (entry.type !== 'assistant') return;
 
     const msg = entry.message ?? {};
     const usage = msg.usage;
-    if (!usage) continue;
+    if (!usage) return;
 
-    // One API request is written as several assistant lines — one per content
-    // block (thinking, text, tool_use) — all carrying the same requestId and an
-    // identical usage object. Bill the request once, but merge the content of
-    // every line into that single turn so no tool calls are lost.
     const requestId = entry.requestId ?? msg.id;
     if (requestId && seenRequests.has(requestId)) {
-      const turn = seenRequests.get(requestId);
-      turn.tools.push(...toolNames(msg.content));
-      turn.textChars += textLength(msg.content);
-      turn.thinking = turn.thinking || hasThinking(msg.content);
-      if (msg.stop_reason) turn.stopReason = msg.stop_reason;
-      continue;
+      const prior = seenRequests.get(requestId);
+      prior.tools.push(...toolNames(msg.content));
+      prior.textChars += textLength(msg.content);
+      prior.thinking = prior.thinking || hasThinking(msg.content);
+      if (msg.stop_reason) prior.stopReason = msg.stop_reason;
+      return;
     }
 
     const speed = usage.speed ?? 'standard';
@@ -176,7 +176,7 @@ async function parseFile({ file, projectPath, projectDir }) {
 
     const turn = {
       sessionId: entry.sessionId ?? session.id,
-      projectPath: entry.cwd ?? projectPath,
+      projectPath: entry.cwd ?? projectPath ?? 'unknown',
       gitBranch: entry.gitBranch ?? null,
       version: entry.version ?? null,
       timestamp: Number.isFinite(ts) ? ts : null,
@@ -184,7 +184,7 @@ async function parseFile({ file, projectPath, projectDir }) {
       modelDisplay: info.display,
       tier: info.tier,
       effort: entry.effort ?? null,
-      speed: usage.speed ?? 'standard',
+      speed,
       serviceTier: usage.service_tier ?? null,
       stopReason: msg.stop_reason ?? null,
       isSidechain: Boolean(entry.isSidechain),
@@ -211,7 +211,56 @@ async function parseFile({ file, projectPath, projectDir }) {
     if (requestId) seenRequests.set(requestId, turn);
   }
 
-  return { turns, session };
+  return { pushLine, turns, session };
+}
+
+/**
+ * Parse an uploaded transcript body. `name` is only used as a fallback session
+ * id when the lines themselves don't carry one.
+ */
+export function parseTranscriptText(text, { name = 'uploaded' } = {}) {
+  const acc = createAccumulator({ id: null, file: name, projectPath: null });
+  for (const line of text.split('\n')) acc.pushLine(line);
+  if (acc.session.id === null) acc.session.id = name.replace(/\.jsonl$/, '');
+  // Turns recorded before the id was discovered still need one.
+  for (const t of acc.turns) if (!t.sessionId) t.sessionId = acc.session.id;
+  return { turns: acc.turns, session: acc.session };
+}
+
+/** Parse a set of uploaded files into the same shape loadUsage() returns. */
+export function parseUploads(files) {
+  const turns = [];
+  const sessions = [];
+  const stats = { files: 0, skippedFiles: 0, parseErrors: 0, root: 'uploaded files' };
+  for (const f of files) {
+    try {
+      const { turns: t, session } = parseTranscriptText(f.text, { name: f.name });
+      session.sizeBytes = f.text.length;
+      stats.files += 1;
+      stats.parseErrors += session.parseErrors;
+      if (t.length || session.userMessages) {
+        sessions.push(session);
+        turns.push(...t);
+      }
+    } catch {
+      stats.skippedFiles += 1;
+    }
+  }
+  turns.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+  return { turns, sessions, stats };
+}
+
+async function parseFile({ file, projectPath, projectDir }) {
+  const acc = createAccumulator({
+    id: path.basename(file, '.jsonl'),
+    file,
+    projectDir,
+    projectPath,
+  });
+  const stream = createReadStream(file, { encoding: 'utf8' });
+  const lines = createInterface({ input: stream, crlfDelay: Infinity });
+  for await (const line of lines) acc.pushLine(line);
+  return { turns: acc.turns, session: acc.session };
 }
 
 /**
@@ -251,12 +300,13 @@ export async function loadUsage({ root = defaultProjectsDir(), since = null } = 
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, targets.length) }, worker));
 
-  const cutoff = since ? Date.parse(since) : null;
-  const filtered =
-    cutoff && Number.isFinite(cutoff)
-      ? turns.filter((t) => t.timestamp !== null && t.timestamp >= cutoff)
-      : turns;
+  turns.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+  return { turns: applySince(turns, since), sessions, stats };
+}
 
-  filtered.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
-  return { turns: filtered, sessions, stats };
+/** Drop turns older than an ISO date. Turns without a timestamp are excluded. */
+export function applySince(turns, since) {
+  const cutoff = since ? Date.parse(since) : null;
+  if (!cutoff || !Number.isFinite(cutoff)) return turns;
+  return turns.filter((t) => t.timestamp !== null && t.timestamp >= cutoff);
 }
