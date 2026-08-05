@@ -262,6 +262,54 @@ footer.foot { color: var(--text-muted); font-size: 12px; margin-top: 28px; }
 .prose p { margin: 0 0 10px; color: var(--text-secondary); font-size: 13px; max-width: 72ch; }
 .prose p:last-child { margin-bottom: 0; }
 
+/* ---------- multi-select filters ---------- */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.multi { border: 0; margin: 0; padding: 0; min-width: 0; }
+.multi legend {
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--plane);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  padding: 5px 11px;
+  cursor: pointer;
+  user-select: none;
+}
+.chip:hover { background: var(--hover); }
+/* The checkbox stays in the DOM for keyboard and assistive tech; the chip is
+   its visible state, so the box itself is collapsed rather than hidden. */
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.chip:focus-within { outline: 2px solid var(--series-1); outline-offset: 1px; }
+.chip.on {
+  border-color: var(--series-1);
+  color: var(--text-primary);
+  font-weight: 600;
+  background: var(--surface-1);
+}
+.chip .dot { margin-right: 5px; opacity: 0.35; }
+.chip.on .dot { opacity: 1; }
+.chip-note { color: var(--text-muted); font-weight: 400; margin-left: 6px; }
+.chip-actions { display: flex; gap: 12px; }
+.chip-actions .table-toggle { padding: 6px 0 0; }
+.filter-mode { display: flex; flex-direction: column; gap: 6px; }
+.filter-mode-label { color: var(--text-secondary); font-size: 12px; }
+
 /* ---------- search ---------- */
 .search {
   width: 100%;

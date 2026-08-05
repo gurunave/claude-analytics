@@ -34,7 +34,7 @@ node bin/claude-analytics.js --tz America/New_York
 | Page | What it answers |
 |---|---|
 | **Overview** | Headline tiles (spend, cache savings, tokens, median/p95 session cost), daily spend over time, and the split across output / cache writes / uncached input / cache reads — usually the most surprising chart |
-| **Models** | Spend per model, reasoning effort, how turns ended (a high `max_tokens` share means truncation), and CLI versions |
+| **Models** | Spend per model, blended price vs capability index, reasoning effort, how turns ended (a high `max_tokens` share means truncation), serving platform, and CLI versions |
 | **Projects** | Spend per project and per git branch |
 | **Activity** | Weekday × hour heatmap, spend by hour of day, and a day-by-day table |
 | **Tools** | Every tool call, with MCP tools distinguished from built-ins |
@@ -60,6 +60,39 @@ never written to disk; the five most recent are retained and a restart clears
 them. A file with no assistant entries carrying `message.usage` is rejected
 outright rather than displayed as zero, since that almost always means it isn't
 a Claude Code transcript.
+
+## Blended price vs capability index
+
+The Models page plots one point per model: **capability index** up the y-axis,
+**blended price** ($/MTok) across the x-axis, dot area proportional to spend.
+Up-and-left is better value.
+
+Two filters drive it, both multi-select:
+
+- **Providers** — the platform that served each request, read off the raw model
+  id (`anthropic.` prefix → Bedrock, `@version` suffix → Vertex, otherwise the
+  first-party API). Deselecting a provider re-derives every price from the
+  remaining turns rather than just hiding points, because the effective price a
+  model shows depends on which of its turns are counted.
+- **Models** — which models are on the chart at all.
+
+There is also a **price basis** toggle:
+
+- **Effective** — what you actually paid per million billed tokens, cache
+  discounts included. This is usually well below list, and it is the number
+  that answers "what is this model costing me".
+- **List** — the catalogue rate as one number, input and output weighted
+  `BLEND_INPUT_SHARE` (3:1 by default, since agent traffic is prompt-heavy).
+  Comparable across models regardless of how any workload ran.
+
+The **capability index** is an ordinal 0–100 ranking declared per model in
+`src/pricing.js` — it places models relative to each other, it is not a
+benchmark result. Edit the `capability` values if your ordering differs;
+nothing else needs to change. Models with no index (an unrecognized id) are
+listed in the table but not plotted.
+
+Only models that appear in the selected time range are shown, so the chart
+compares what you actually run rather than the whole catalogue.
 
 ## How costs are computed
 

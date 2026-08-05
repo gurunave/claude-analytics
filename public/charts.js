@@ -384,6 +384,163 @@ export function heatmap(matrix, timeZone) {
   return svg;
 }
 
+/**
+ * Scatter plot with a labelled point per row: x is price, y is capability.
+ *
+ * Point area — not radius — is proportional to `size`, so a dot that looks
+ * twice as big really is twice the spend. Labels are placed to the right of
+ * each dot and nudged when two points would collide.
+ */
+export function scatter(points, { x, y, size, label, colorFn, xFormat = usd, tipRows, xLabel, yLabel }) {
+  const W = 900;
+  const H = 360;
+  const m = { top: 16, right: 24, bottom: 44, left: 56 };
+  const iw = W - m.left - m.right;
+  const ih = H - m.top - m.bottom;
+
+  // Both axes start at zero: a truncated price axis would exaggerate gaps
+  // between models that are actually close together.
+  const xMax = Math.max(...points.map((p) => p[x]), 1e-9) * 1.12;
+  const yMax = Math.max(100, ...points.map((p) => p[y] ?? 0));
+  const sizeMax = Math.max(...points.map((p) => p[size] ?? 0), 1e-9);
+  const px = (v) => (v / xMax) * iw;
+  const py = (v) => ih - (v / yMax) * ih;
+  const radius = (v) => 5 + 13 * Math.sqrt(Math.max(0, v ?? 0) / sizeMax);
+
+  const svg = el('svg', {
+    viewBox: `0 0 ${W} ${H}`,
+    role: 'img',
+    'aria-label': `${yLabel ?? 'capability'} against ${xLabel ?? 'price'}`,
+  });
+  const g = el('g', { transform: `translate(${m.left},${m.top})` });
+  svg.appendChild(g);
+
+  for (let i = 0; i <= 4; i += 1) {
+    const v = (yMax / 4) * i;
+    g.appendChild(el('line', { class: 'grid-line', x1: 0, x2: iw, y1: py(v), y2: py(v) }));
+    g.appendChild(
+      el('text', { class: 'axis-label', x: -10, y: py(v) + 4, 'text-anchor': 'end', text: Math.round(v) }),
+    );
+  }
+  for (let i = 0; i <= 4; i += 1) {
+    const v = (xMax / 4) * i;
+    g.appendChild(
+      el('text', { class: 'axis-label', x: px(v), y: ih + 18, 'text-anchor': 'middle', text: xFormat(v) }),
+    );
+  }
+  g.appendChild(el('line', { class: 'axis-line', x1: 0, x2: iw, y1: ih, y2: ih }));
+  g.appendChild(el('line', { class: 'axis-line', x1: 0, x2: 0, y1: 0, y2: ih }));
+  if (xLabel) {
+    g.appendChild(
+      el('text', { class: 'axis-label', x: iw / 2, y: ih + 38, 'text-anchor': 'middle', text: xLabel }),
+    );
+  }
+  if (yLabel) {
+    g.appendChild(
+      el('text', {
+        class: 'axis-label',
+        x: -(ih / 2),
+        y: -40,
+        transform: 'rotate(-90)',
+        'text-anchor': 'middle',
+        text: yLabel,
+      }),
+    );
+  }
+
+  // Draw the largest first so a small point never disappears behind a big one.
+  const ordered = [...points].sort((a, b) => (b[size] ?? 0) - (a[size] ?? 0));
+  const placed = [];
+  for (const p of ordered) {
+    const cx = px(p[x]);
+    const cy = py(p[y] ?? 0);
+    const r = radius(p[size]);
+    const fill = colorFn ? colorFn(p) : SERIES[0];
+    const node = el('g');
+    node.appendChild(el('circle', { cx, cy, r, fill, 'fill-opacity': '0.75', stroke: fill, 'stroke-width': '1.5' }));
+
+    // Nudge the label down when it would land on one already drawn.
+    let ly = cy + 4;
+    while (placed.some((q) => Math.abs(q.y - ly) < 12 && Math.abs(q.x - (cx + r + 7)) < 150)) ly += 13;
+    placed.push({ x: cx + r + 7, y: ly });
+    node.appendChild(
+      el('text', {
+        class: 'mark-label',
+        x: cx + r + 7,
+        y: ly,
+        'text-anchor': cx + r + 90 > iw ? 'end' : 'start',
+        ...(cx + r + 90 > iw ? { x: cx - r - 7 } : {}),
+        text: String(p[label]),
+      }),
+    );
+
+    const hit = el('circle', { cx, cy, r: Math.max(r, 10), fill: 'transparent' });
+    hit.addEventListener('pointermove', (evt) => showTip(evt, String(p[label]), tipRows(p)));
+    hit.addEventListener('pointerleave', hideTip);
+    node.appendChild(hit);
+    g.appendChild(node);
+  }
+  return svg;
+}
+
+/**
+ * Checkbox filter rendered as a row of toggle chips.
+ *
+ * Chips rather than a <select multiple>: the options here are few, and a
+ * multi-select listbox hides the current selection behind a scroll. Each chip
+ * is a real checkbox, so keyboard and screen-reader behaviour comes for free.
+ */
+export function multiSelect(legendText, options, { selected, onChange, colorFn }) {
+  const set = new Set(selected);
+  const box = el('fieldset', { class: 'multi' });
+  box.appendChild(el('legend', { text: legendText }));
+  const chips = el('div', { class: 'chips' });
+
+  const emit = () => onChange([...set]);
+  for (const opt of options) {
+    const input = el('input', { type: 'checkbox', value: opt.value });
+    input.checked = set.has(opt.value);
+    const chip = el('label', { class: `chip${input.checked ? ' on' : ''}` }, [input]);
+    if (colorFn) {
+      chip.appendChild(el('span', { class: 'dot', style: `background:${colorFn(opt)}` }));
+    }
+    chip.appendChild(el('span', { text: opt.label }));
+    if (opt.note) chip.appendChild(el('span', { class: 'chip-note', text: opt.note }));
+    input.addEventListener('change', () => {
+      if (input.checked) set.add(opt.value);
+      else set.delete(opt.value);
+      chip.classList.toggle('on', input.checked);
+      emit();
+    });
+    chips.appendChild(chip);
+  }
+  box.appendChild(chips);
+
+  const actions = el('div', { class: 'chip-actions' });
+  const all = el('button', { class: 'table-toggle', text: 'Select all' });
+  all.addEventListener('click', () => {
+    for (const opt of options) set.add(opt.value);
+    for (const input of chips.querySelectorAll('input')) {
+      input.checked = true;
+      input.closest('.chip').classList.add('on');
+    }
+    emit();
+  });
+  const none = el('button', { class: 'table-toggle', text: 'Clear' });
+  none.addEventListener('click', () => {
+    set.clear();
+    for (const input of chips.querySelectorAll('input')) {
+      input.checked = false;
+      input.closest('.chip').classList.remove('on');
+    }
+    emit();
+  });
+  actions.appendChild(all);
+  actions.appendChild(none);
+  box.appendChild(actions);
+  return box;
+}
+
 /** Table view — the relief for sub-3:1 series colors, and the accessible fallback. */
 export function table(head, rows, { scroll = false } = {}) {
   const t = el('table');
