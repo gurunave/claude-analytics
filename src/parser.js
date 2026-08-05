@@ -23,7 +23,7 @@ import { createInterface } from 'node:readline';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-import { costOf, modelInfo } from './pricing.js';
+import { costOf, modelInfo, providerOf } from './pricing.js';
 
 export function defaultProjectsDir() {
   return process.env.CLAUDE_PROJECTS_DIR || path.join(homedir(), '.claude', 'projects');
@@ -173,6 +173,7 @@ function createAccumulator({ id, file = null, projectDir = null, projectPath = n
     const speed = usage.speed ?? 'standard';
     const cost = costOf(usage, msg.model, speed);
     const info = modelInfo(msg.model);
+    const provider = providerOf(msg.model);
 
     const turn = {
       sessionId: entry.sessionId ?? session.id,
@@ -183,6 +184,9 @@ function createAccumulator({ id, file = null, projectDir = null, projectPath = n
       model: info.id,
       modelDisplay: info.display,
       tier: info.tier,
+      capability: info.capability ?? null,
+      provider: provider.id,
+      providerLabel: provider.label,
       effort: entry.effort ?? null,
       speed,
       serviceTier: usage.service_tier ?? null,

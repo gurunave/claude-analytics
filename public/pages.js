@@ -5,7 +5,8 @@
 
 import {
   SERIES, usd, tok, pct, int, dur, shortPath,
-  el, card, lineChart, barsH, legend, stackedBar, heatmap, table, collapsibleTable,
+  el, card, lineChart, barsH, legend, stackedBar, heatmap, scatter, multiSelect,
+  table, collapsibleTable,
 } from './charts.js';
 
 function frag(...nodes) {
@@ -79,6 +80,223 @@ function overview(report) {
   );
 }
 
+/* ---------- blended price vs capability ---------- */
+
+const TIER_COLORS = {
+  opus: SERIES[0],
+  fable: SERIES[6],
+  sonnet: SERIES[2],
+  haiku: SERIES[3],
+  unknown: SERIES[7],
+};
+
+const price = (n) => (n === null || n === undefined ? '—' : `$${n.toFixed(2)}`);
+
+/** Distinct values in first-appearance order, which is cost order here. */
+function distinct(rows, valueKey, labelKey) {
+  const seen = new Map();
+  for (const r of rows) if (!seen.has(r[valueKey])) seen.set(r[valueKey], r[labelKey]);
+  return [...seen.entries()].map(([value, label]) => ({ value, label }));
+}
+
+/**
+ * Price against capability, one point per model.
+ *
+ * The filters are the point of the card: models are only comparable when you
+ * choose what to compare, and effective price depends on which providers'
+ * turns are counted — so both selections re-derive the points from the
+ * (model, provider) rows rather than hiding pre-computed ones.
+ */
+function priceCapabilityCard(report) {
+  const all = report.priceCapability?.rows ?? [];
+  if (!all.length) return null;
+
+  const providerOptions = distinct(all, 'provider', 'providerLabel');
+  const modelOptions = distinct(all, 'model', 'modelDisplay');
+  const state = {
+    providers: new Set(providerOptions.map((o) => o.value)),
+    models: new Set(modelOptions.map((o) => o.value)),
+    mode: 'effective',
+  };
+
+  const wrap = el('div', { class: 'card' }, [
+    el('h2', { text: 'Blended price vs capability index' }),
+    el('p', {
+      class: 'hint',
+      text:
+        'One point per model: capability index up, blended price across. Bigger dots are more ' +
+        'spend, and up-and-left is better value. The capability index is an ordinal ranking in ' +
+        'src/pricing.js, not a benchmark score — edit it if your ordering differs.',
+    }),
+  ]);
+
+  const controls = el('div', { class: 'filter-row' });
+  controls.appendChild(
+    multiSelect('Providers', providerOptions, {
+      selected: [...state.providers],
+      onChange: (vals) => {
+        state.providers = new Set(vals);
+        draw();
+      },
+    }),
+  );
+  controls.appendChild(
+    multiSelect('Models', modelOptions, {
+      selected: [...state.models],
+      colorFn: (opt) => TIER_COLORS[all.find((r) => r.model === opt.value)?.tier] ?? SERIES[7],
+      onChange: (vals) => {
+        state.models = new Set(vals);
+        draw();
+      },
+    }),
+  );
+
+  const modeSeg = el('div', { class: 'seg' }, [
+    el('button', { 'data-mode': 'effective', 'aria-pressed': 'true', text: 'Effective' }),
+    el('button', { 'data-mode': 'list', 'aria-pressed': 'false', text: 'List price' }),
+  ]);
+  modeSeg.addEventListener('click', (evt) => {
+    const btn = evt.target.closest('button');
+    if (!btn) return;
+    for (const b of modeSeg.querySelectorAll('button')) b.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-pressed', 'true');
+    state.mode = btn.dataset.mode;
+    draw();
+  });
+  controls.appendChild(el('div', { class: 'filter-mode' }, [
+    el('span', { class: 'filter-mode-label', text: 'Price basis' }),
+    modeSeg,
+  ]));
+  wrap.appendChild(controls);
+
+  const holder = el('div');
+  wrap.appendChild(holder);
+
+  /** Collapse the selected (model, provider) rows down to one row per model. */
+  function points() {
+    const byModel = new Map();
+    for (const r of all) {
+      if (!state.providers.has(r.provider) || !state.models.has(r.model)) continue;
+      let p = byModel.get(r.model);
+      if (!p) {
+        p = {
+          model: r.model,
+          label: r.modelDisplay,
+          tier: r.tier,
+          capability: r.capability,
+          listBlended: r.listBlended,
+          listInput: r.listInput,
+          listOutput: r.listOutput,
+          providers: new Set(),
+          cost: 0,
+          turns: 0,
+          totalTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+        };
+        byModel.set(r.model, p);
+      }
+      p.providers.add(r.providerLabel);
+      p.cost += r.cost;
+      p.turns += r.turns;
+      p.totalTokens += r.totalTokens;
+      p.outputTokens += r.outputTokens;
+      p.cacheReadTokens += r.cacheReadTokens;
+    }
+    for (const p of byModel.values()) {
+      p.effectiveBlended = p.totalTokens ? (p.cost / p.totalTokens) * 1e6 : null;
+      p.blended = state.mode === 'list' ? p.listBlended : p.effectiveBlended;
+      // Capability bought per dollar per million tokens — the value ranking
+      // the scatter shows geometrically.
+      p.perDollar = p.blended > 0 && p.capability !== null ? p.capability / p.blended : null;
+    }
+    return [...byModel.values()].sort((a, b) => b.cost - a.cost);
+  }
+
+  function draw() {
+    holder.innerHTML = '';
+    const rows = points();
+    if (!rows.length) {
+      holder.appendChild(note('Nothing selected. Pick at least one provider and one model.'));
+      return;
+    }
+    const plottable = rows.filter((r) => r.capability !== null && r.blended > 0);
+    if (!plottable.length) {
+      holder.appendChild(
+        note('The selected models have no capability index or no billed tokens to price.'),
+      );
+    } else {
+      holder.appendChild(
+        scatter(plottable, {
+          x: 'blended',
+          y: 'capability',
+          size: 'cost',
+          label: 'label',
+          colorFn: (p) => TIER_COLORS[p.tier] ?? SERIES[7],
+          xLabel:
+            state.mode === 'list'
+              ? `List blended price, $/MTok (${pct(report.priceCapability.blendInputShare)} input)`
+              : 'Effective blended price, $/MTok (what you actually paid)',
+          yLabel: 'Capability index',
+          tipRows: (p) => [
+            ['Capability', String(p.capability)],
+            ['Effective', `${price(p.effectiveBlended)}/MTok`],
+            ['List', `${price(p.listBlended)}/MTok`],
+            ['Index per $', p.perDollar === null ? '—' : p.perDollar.toFixed(1)],
+            ['Spend', usd(p.cost)],
+            ['Tokens', tok(p.totalTokens)],
+            ['Provider', [...p.providers].join(', ')],
+          ],
+        }),
+      );
+      const tiers = [...new Set(plottable.map((p) => p.tier))];
+      holder.appendChild(
+        el('div', { class: 'legend' },
+          tiers.map((t) =>
+            el('div', { class: 'item' }, [
+              el('span', { class: 'swatch', style: `background:${TIER_COLORS[t] ?? SERIES[7]}` }),
+              el('span', { text: t }),
+            ]),
+          ),
+        ),
+      );
+      const skipped = rows.length - plottable.length;
+      if (skipped) {
+        holder.appendChild(
+          el('p', { class: 'hint', text: `${int(skipped)} model(s) not plotted — no capability index or no billed tokens.` }),
+        );
+      }
+    }
+
+    holder.appendChild(
+      collapsibleTable(
+        'Show as table',
+        table(
+          [
+            { label: 'Model' }, { label: 'Provider' }, { label: 'Capability', num: true },
+            { label: 'Effective $/MTok', num: true }, { label: 'List $/MTok', num: true },
+            { label: 'Index per $', num: true }, { label: 'Spend', num: true },
+            { label: 'Tokens', num: true },
+          ],
+          rows.map((r) => [
+            r.label,
+            [...r.providers].join(', '),
+            r.capability === null ? '—' : String(r.capability),
+            price(r.effectiveBlended),
+            price(r.listBlended),
+            r.perDollar === null ? '—' : r.perDollar.toFixed(1),
+            usd(r.cost),
+            tok(r.totalTokens),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  draw();
+  return wrap;
+}
+
 /* ---------- models ---------- */
 
 function models(report) {
@@ -134,7 +352,18 @@ function models(report) {
         ),
       ),
     ),
+    priceCapabilityCard(report),
     grid,
+    report.byProvider?.length > 1
+      ? card(
+          'Serving platform',
+          'Read from the model id: Bedrock carries an anthropic. prefix, Vertex an @version suffix. All routes are costed at first-party rates.',
+          table(
+            [{ label: 'Platform' }, { label: 'Turns', num: true }, { label: 'Cost', num: true }],
+            report.byProvider.map((r) => [r.provider, int(r.turns), usd(r.cost)]),
+          ),
+        )
+      : null,
     card(
       'CLI versions',
       'Useful for spotting when usage shifted after an upgrade.',

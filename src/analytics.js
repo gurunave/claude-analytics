@@ -5,7 +5,7 @@
  * server calls buildReport() per request; the CLI calls it once.
  */
 
-import { modelInfo } from './pricing.js';
+import { modelInfo, blendedListPrice, BLEND_INPUT_SHARE, PROVIDERS } from './pricing.js';
 
 const EMPTY_TOTALS = () => ({
   turns: 0,
@@ -100,6 +100,54 @@ function promptTokens(row) {
   return row.inputTokens + row.cacheReadTokens + row.cacheWriteTokens;
 }
 
+/**
+ * What a bucket of turns actually cost per million tokens, cache discounts and
+ * all. Null when nothing was billed, so callers plot a gap rather than a zero.
+ */
+export function effectiveBlendedPrice(row) {
+  const tokens = promptTokens(row) + row.outputTokens;
+  return tokens > 0 ? (row.cost / tokens) * 1e6 : null;
+}
+
+/**
+ * One row per (model, provider) pair, carrying both prices and the capability
+ * index. The pair — rather than the model alone — is the grain the price /
+ * capability chart filters on: selecting a subset of providers has to re-derive
+ * the effective price from only those turns, which needs the split preserved.
+ */
+function priceCapabilityRows(turns) {
+  // The key is a string so groupBy can bucket it; the pair it stands for is
+  // kept alongside rather than parsed back out, since model ids and provider
+  // ids are free to contain any delimiter we might pick.
+  const pairs = new Map();
+  const grouped = groupBy(turns, (t) => {
+    const provider = t.provider ?? 'unknown';
+    const key = `${t.model}|${provider}`;
+    if (!pairs.has(key)) pairs.set(key, { model: t.model, provider });
+    return key;
+  });
+  return [...grouped.entries()]
+    .map(([key, v]) => {
+      const { model, provider } = pairs.get(key);
+      const info = modelInfo(model);
+      return {
+        model,
+        modelDisplay: info.display,
+        tier: info.tier,
+        provider,
+        providerLabel: (PROVIDERS[provider] ?? PROVIDERS.unknown).label,
+        capability: info.capability ?? null,
+        listInput: info.input,
+        listOutput: info.output,
+        listBlended: blendedListPrice(info),
+        effectiveBlended: effectiveBlendedPrice(v),
+        totalTokens: promptTokens(v) + v.outputTokens,
+        ...v,
+      };
+    })
+    .sort((a, b) => b.cost - a.cost);
+}
+
 function percentile(sorted, p) {
   if (!sorted.length) return 0;
   const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
@@ -112,6 +160,7 @@ export function buildReport(turns, sessions, { timeZone = 'UTC' } = {}) {
   const byModel = toSortedRows(groupBy(turns, (t) => t.modelDisplay), 'model');
   const byProject = toSortedRows(groupBy(turns, (t) => t.projectPath), 'project');
   const byBranch = toSortedRows(groupBy(turns, (t) => t.gitBranch), 'branch');
+  const byProvider = toSortedRows(groupBy(turns, (t) => t.providerLabel ?? 'unknown'), 'provider');
   const byEffort = toSortedRows(groupBy(turns, (t) => t.effort ?? 'unset'), 'effort');
   const byVersion = toSortedRows(groupBy(turns, (t) => t.version ?? 'unknown'), 'version');
   const byStopReason = toSortedRows(groupBy(turns, (t) => t.stopReason ?? 'none'), 'stopReason');
@@ -218,8 +267,14 @@ export function buildReport(turns, sessions, { timeZone = 'UTC' } = {}) {
       lastActivity: daily.at(-1)?.date ?? null,
       thinkingRate: totals.turns ? totals.thinkingTurns / totals.turns : 0,
       outputPerTurn: totals.turns ? totals.outputTokens / totals.turns : 0,
+      blendedPrice: effectiveBlendedPrice(totals),
     },
     byModel,
+    byProvider,
+    priceCapability: {
+      blendInputShare: BLEND_INPUT_SHARE,
+      rows: priceCapabilityRows(turns),
+    },
     byProject,
     byBranch: byBranch.filter((b) => b.branch),
     byEffort,
