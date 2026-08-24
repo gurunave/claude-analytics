@@ -3,196 +3,79 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>gnaveenkumar.com — Launching Soon 🚀</title>
-<meta name="description" content="gnaveenkumar.com is under construction. A new universe is taking shape here." />
+<title>gnaveenkumar.com — build in progress</title>
+<meta name="description" content="gnaveenkumar.com is compiling. Work in progress — check back soon." />
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --deep-space: #030014;
-    --nebula-purple: #7b2ff7;
-    --nebula-pink: #f107a3;
-    --nebula-cyan: #00e5ff;
-    --star-gold: #ffd166;
+    --bg: #0a0e14;
+    --panel: #0f1520;
+    --panel-border: #1e2a3a;
+    --green: #3ddc84;
+    --cyan: #4dd0e1;
+    --yellow: #ffd866;
+    --red: #ff6188;
+    --purple: #ab9df2;
+    --text: #d8dee9;
+    --muted: #5c6b7f;
+    --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Courier New', monospace;
   }
 
   html, body {
     height: 100%;
     overflow: hidden;
-    background: var(--deep-space);
-    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    color: #fff;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
   }
 
-  /* ---------- Star canvas ---------- */
-  #space {
+  /* ---------- Code rain canvas ---------- */
+  #rain {
     position: fixed;
     inset: 0;
     z-index: 0;
+    opacity: 0.16;
   }
 
-  /* ---------- Nebula clouds ---------- */
-  .nebula {
+  /* ---------- Subtle CRT scanlines + vignette ---------- */
+  body::before {
+    content: '';
     position: fixed;
-    border-radius: 50%;
-    filter: blur(90px);
-    opacity: 0.45;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* ---------- Floating code symbols ---------- */
+  .float-sym {
+    position: fixed;
     z-index: 1;
-    animation: nebulaDrift 26s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-  .nebula.one {
-    width: 55vmax; height: 55vmax;
-    top: -20vmax; left: -15vmax;
-    background: radial-gradient(circle, var(--nebula-purple), transparent 65%);
-  }
-  .nebula.two {
-    width: 50vmax; height: 50vmax;
-    bottom: -18vmax; right: -12vmax;
-    background: radial-gradient(circle, var(--nebula-pink), transparent 65%);
-    animation-delay: -8s;
-    animation-duration: 32s;
-  }
-  .nebula.three {
-    width: 40vmax; height: 40vmax;
-    top: 30%; left: 55%;
-    background: radial-gradient(circle, var(--nebula-cyan), transparent 65%);
-    opacity: 0.22;
-    animation-delay: -15s;
-    animation-duration: 38s;
-  }
-  @keyframes nebulaDrift {
-    0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
-    50%  { transform: translate(6vmax, -4vmax) scale(1.15) rotate(10deg); }
-    100% { transform: translate(-4vmax, 5vmax) scale(0.95) rotate(-8deg); }
-  }
-
-  /* ---------- Shooting stars ---------- */
-  .shooting-star {
-    position: fixed;
-    width: 3px; height: 3px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
-    z-index: 2;
+    font-size: clamp(1.2rem, 3vw, 2.4rem);
+    color: var(--muted);
     opacity: 0;
-    animation: shoot 6s linear infinite;
+    animation: floatUp 14s linear infinite;
     pointer-events: none;
+    user-select: none;
   }
-  .shooting-star::after {
-    content: '';
-    position: absolute;
-    top: 50%; right: 0;
-    width: 140px; height: 1.5px;
-    transform: translateY(-50%);
-    background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
-  }
-  .shooting-star:nth-child(1) { top: 12%; left: 65%; animation-delay: 1s; }
-  .shooting-star:nth-child(2) { top: 30%; left: 85%; animation-delay: 3.5s; animation-duration: 7s; }
-  .shooting-star:nth-child(3) { top: 6%;  left: 35%; animation-delay: 6s;  animation-duration: 8s; }
-  @keyframes shoot {
-    0%   { opacity: 0; transform: translate(0, 0) rotate(-25deg); }
-    3%   { opacity: 1; }
-    12%  { opacity: 0; transform: translate(-45vw, 22vh) rotate(-25deg); }
-    100% { opacity: 0; transform: translate(-45vw, 22vh) rotate(-25deg); }
+  .float-sym:nth-child(1) { left: 6%;  animation-delay: 0s;   color: #2e5d46; }
+  .float-sym:nth-child(2) { left: 16%; animation-delay: 3s;   color: #2b4d63; }
+  .float-sym:nth-child(3) { left: 78%; animation-delay: 1.5s; color: #4d4368; }
+  .float-sym:nth-child(4) { left: 88%; animation-delay: 5s;   color: #5d5433; }
+  .float-sym:nth-child(5) { left: 68%; animation-delay: 8s;   color: #2e5d46; }
+  .float-sym:nth-child(6) { left: 28%; animation-delay: 10s;  color: #5d3346; }
+  @keyframes floatUp {
+    0%   { transform: translateY(105vh) rotate(0deg); opacity: 0; }
+    8%   { opacity: 0.7; }
+    92%  { opacity: 0.7; }
+    100% { transform: translateY(-8vh) rotate(24deg); opacity: 0; }
   }
 
-  /* ---------- Orbiting planets ---------- */
-  .orbit-system {
-    position: fixed;
-    top: 50%; left: 50%;
-    z-index: 2;
-    pointer-events: none;
-  }
-  .orbit {
-    position: absolute;
-    top: 50%; left: 50%;
-    border: 1px dashed rgba(255,255,255,0.08);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-  }
-  .orbit.o1 { width: 78vmin; height: 78vmin; animation: spin 40s linear infinite; }
-  .orbit.o2 { width: 108vmin; height: 108vmin; animation: spin 70s linear infinite reverse; }
-  .orbit.o3 { width: 140vmin; height: 140vmin; animation: spin 110s linear infinite; }
-  @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-  .planet {
-    position: absolute;
-    border-radius: 50%;
-    top: -14px; left: 50%;
-  }
-  .planet.mars {
-    width: 28px; height: 28px;
-    background: radial-gradient(circle at 32% 30%, #ffb56b, #d95d39 60%, #7a2510);
-    box-shadow: 0 0 18px rgba(217, 93, 57, 0.7);
-  }
-  .planet.ice {
-    width: 20px; height: 20px;
-    background: radial-gradient(circle at 32% 30%, #d8fdff, #59c8ff 60%, #1a52a8);
-    box-shadow: 0 0 16px rgba(89, 200, 255, 0.8);
-  }
-  .planet.ringed {
-    width: 34px; height: 34px;
-    background: radial-gradient(circle at 32% 30%, #ffe9b0, #d9a53c 60%, #8a5a13);
-    box-shadow: 0 0 20px rgba(217, 165, 60, 0.7);
-  }
-  .planet.ringed::before {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 64px; height: 18px;
-    border: 2px solid rgba(255, 226, 158, 0.75);
-    border-radius: 50%;
-    transform: translate(-50%, -50%) rotate(-24deg);
-  }
-
-  /* ---------- Astronaut ---------- */
-  .astronaut {
-    position: fixed;
-    top: 14%;
-    right: 9%;
-    width: clamp(90px, 13vw, 170px);
-    z-index: 3;
-    animation: floatSpace 9s ease-in-out infinite;
-    filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.35));
-    pointer-events: none;
-  }
-  @keyframes floatSpace {
-    0%   { transform: translateY(0) rotate(-6deg); }
-    25%  { transform: translateY(-26px) rotate(4deg); }
-    50%  { transform: translateY(-8px) rotate(10deg); }
-    75%  { transform: translateY(-30px) rotate(-2deg); }
-    100% { transform: translateY(0) rotate(-6deg); }
-  }
-
-  /* ---------- Rocket ---------- */
-  .rocket {
-    position: fixed;
-    bottom: -140px;
-    left: 8%;
-    width: clamp(60px, 8vw, 110px);
-    z-index: 3;
-    animation: rocketFly 14s ease-in-out infinite;
-    pointer-events: none;
-  }
-  @keyframes rocketFly {
-    0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-    8%   { opacity: 1; }
-    50%  { transform: translate(28vw, -68vh) rotate(12deg); opacity: 1; }
-    62%  { opacity: 0; }
-    100% { transform: translate(45vw, -110vh) rotate(16deg); opacity: 0; }
-  }
-  .flame {
-    transform-origin: 50% 0%;
-    animation: flicker 0.12s ease-in-out infinite alternate;
-  }
-  @keyframes flicker {
-    from { transform: scaleY(0.85) scaleX(0.92); }
-    to   { transform: scaleY(1.15) scaleX(1.05); }
-  }
-
-  /* ---------- Content ---------- */
-  .content {
+  /* ---------- Layout ---------- */
+  .wrap {
     position: relative;
     z-index: 5;
     height: 100%;
@@ -200,158 +83,162 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    padding: 24px;
-    gap: 26px;
+    gap: clamp(18px, 3.5vh, 36px);
+    padding: 20px 16px 56px;
   }
 
-  .domain-badge {
-    font-size: clamp(0.8rem, 1.6vw, 1rem);
-    letter-spacing: 0.45em;
+  /* ---------- Glitch headline ---------- */
+  .headline {
+    position: relative;
+    font-size: clamp(1.5rem, 4.6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--text);
     text-transform: uppercase;
-    color: rgba(255,255,255,0.75);
-    border: 1px solid rgba(255,255,255,0.25);
-    padding: 10px 26px 10px 32px;
-    border-radius: 999px;
-    backdrop-filter: blur(6px);
-    background: rgba(255,255,255,0.04);
-    animation: fadeSlideDown 1.2s ease both, borderPulse 3s ease-in-out infinite;
-  }
-  @keyframes borderPulse {
-    0%, 100% { border-color: rgba(255,255,255,0.25); box-shadow: 0 0 0 rgba(0,229,255,0); }
-    50%      { border-color: rgba(0,229,255,0.7);   box-shadow: 0 0 24px rgba(0,229,255,0.25); }
-  }
-
-  h1 {
-    font-size: clamp(2.4rem, 8vw, 6.5rem);
-    font-weight: 900;
-    line-height: 1.05;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    background: linear-gradient(90deg, var(--nebula-cyan), var(--nebula-purple), var(--nebula-pink), var(--star-gold), var(--nebula-cyan));
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: shineFlow 6s linear infinite, fadeSlideUp 1.2s 0.2s ease both;
-  }
-  @keyframes shineFlow { to { background-position: 300% center; } }
-
-  /* Wave animation per letter of "IN PROGRESS" */
-  .wave span {
-    display: inline-block;
-    animation: wave 2.2s ease-in-out infinite;
-  }
-  @keyframes wave {
-    0%, 100% { transform: translateY(0); }
-    30%      { transform: translateY(-0.18em); }
-  }
-
-  .tagline {
-    font-size: clamp(1rem, 2.4vw, 1.4rem);
-    color: rgba(255,255,255,0.82);
-    max-width: 640px;
-    animation: fadeSlideUp 1.2s 0.45s ease both;
-  }
-  .tagline .typing {
-    display: inline-block;
-    border-right: 2px solid var(--nebula-cyan);
+    animation: fadeDown 0.9s ease both;
     white-space: nowrap;
-    overflow: hidden;
-    vertical-align: bottom;
-    animation: typing 3.5s steps(36) 1s both, caretBlink 0.8s step-end infinite;
   }
-  @keyframes typing { from { width: 0; } to { width: 100%; } }
-  @keyframes caretBlink { 50% { border-color: transparent; } }
-
-  /* ---------- Progress bar ---------- */
-  .progress-wrap {
-    width: min(520px, 82vw);
-    animation: fadeSlideUp 1.2s 0.7s ease both;
-  }
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.65);
-    margin-bottom: 10px;
-  }
-  .progress-track {
-    height: 14px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    overflow: hidden;
-    position: relative;
-  }
-  .progress-fill {
-    height: 100%;
-    width: 72%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--nebula-cyan), var(--nebula-purple), var(--nebula-pink));
-    background-size: 200% auto;
-    animation: fillGrow 2.6s 1s cubic-bezier(0.22, 1, 0.36, 1) both, shineFlow 3s linear infinite;
-    position: relative;
-  }
-  .progress-fill::after {
-    content: '';
+  .headline .accent { color: var(--green); }
+  .headline::before,
+  .headline::after {
+    content: attr(data-text);
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-    animation: shimmer 1.6s linear infinite;
+    overflow: hidden;
+    opacity: 0.85;
   }
-  @keyframes fillGrow { from { width: 0; } }
-  @keyframes shimmer {
-    from { transform: translateX(-100%); }
-    to   { transform: translateX(100%); }
+  .headline::before {
+    color: var(--cyan);
+    animation: glitchA 3.2s infinite steps(1);
+  }
+  .headline::after {
+    color: var(--red);
+    animation: glitchB 3.2s infinite steps(1);
+  }
+  @keyframes glitchA {
+    0%, 88%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
+    89% { clip-path: inset(12% 0 60% 0); transform: translate(-4px, -2px); }
+    91% { clip-path: inset(55% 0 20% 0); transform: translate(3px, 1px); }
+    93% { clip-path: inset(80% 0 4% 0);  transform: translate(-2px, 0); }
+    95% { clip-path: inset(30% 0 48% 0); transform: translate(4px, 2px); }
+  }
+  @keyframes glitchB {
+    0%, 88%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
+    90% { clip-path: inset(60% 0 18% 0); transform: translate(4px, 1px); }
+    92% { clip-path: inset(8% 0 72% 0);  transform: translate(-3px, -1px); }
+    94% { clip-path: inset(42% 0 38% 0); transform: translate(2px, 2px); }
   }
 
-  /* ---------- Countdown-ish pulsing dots ---------- */
-  .status {
+  /* ---------- Terminal window ---------- */
+  .terminal {
+    width: min(760px, 94vw);
+    background: rgba(15, 21, 32, 0.92);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(61, 220, 132, 0.06),
+      0 0 42px rgba(61, 220, 132, 0.07);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+    animation: fadeUp 0.9s 0.15s ease both, terminalGlow 5s ease-in-out infinite;
+  }
+  @keyframes terminalGlow {
+    0%, 100% { box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 42px rgba(61,220,132,0.07); }
+    50%      { box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 60px rgba(77,208,225,0.13); }
+  }
+
+  .term-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.95rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.7);
-    animation: fadeSlideUp 1.2s 0.9s ease both;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #131b28;
+    border-bottom: 1px solid var(--panel-border);
   }
-  .status .dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: #38ef7d;
-    box-shadow: 0 0 12px #38ef7d;
-    animation: pulseDot 1.4s ease-in-out infinite;
-  }
-  @keyframes pulseDot {
-    0%, 100% { transform: scale(1);   opacity: 1; }
-    50%      { transform: scale(1.6); opacity: 0.55; }
-  }
-
-  @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeSlideDown {
-    from { opacity: 0; transform: translateY(-30px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ---------- Footer ---------- */
-  footer {
-    position: fixed;
-    bottom: 18px;
-    width: 100%;
+  .term-bar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .term-bar .dot.r { background: #ff5f57; }
+  .term-bar .dot.y { background: #febc2e; }
+  .term-bar .dot.g { background: #28c840; }
+  .term-bar .title {
+    flex: 1;
     text-align: center;
-    z-index: 5;
-    font-size: 0.8rem;
-    letter-spacing: 0.15em;
-    color: rgba(255,255,255,0.45);
-    animation: fadeSlideUp 1.2s 1.1s ease both;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .term-body {
+    padding: 18px 20px 22px;
+    min-height: 320px;
+    max-height: 46vh;
+    overflow-y: auto;
+    font-size: clamp(0.78rem, 1.9vw, 0.95rem);
+    line-height: 1.75;
+    scrollbar-width: thin;
+    scrollbar-color: var(--panel-border) transparent;
+  }
+  .term-body::-webkit-scrollbar { width: 6px; }
+  .term-body::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .prompt  { color: var(--green); font-weight: 700; }
+  .cmd     { color: var(--text); }
+  .out     { color: var(--muted); }
+  .ok      { color: var(--green); }
+  .warn    { color: var(--yellow); }
+  .err     { color: var(--red); }
+  .info    { color: var(--cyan); }
+  .accent2 { color: var(--purple); }
+
+  .cursor {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    margin-left: 2px;
+    background: var(--green);
+    vertical-align: text-bottom;
+    animation: blink 0.9s step-end infinite;
+    box-shadow: 0 0 8px rgba(61, 220, 132, 0.8);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- Status bar (VS Code style) ---------- */
+  .statusbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 6px 16px;
+    background: #10161f;
+    border-top: 1px solid var(--panel-border);
+    font-size: 0.74rem;
+    color: var(--muted);
+    animation: fadeUp 0.9s 0.5s ease both;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .statusbar .item { display: flex; align-items: center; gap: 6px; }
+  .statusbar .grow { flex: 1; }
+  .statusbar .live {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.5); opacity: 0.5; }
+  }
+
+  @keyframes fadeUp   { from { opacity: 0; transform: translateY(24px);  } to { opacity: 1; transform: none; } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 560px) {
+    .statusbar .hide-sm { display: none; }
+    .headline { white-space: normal; text-align: center; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -361,159 +248,171 @@
 </head>
 <body>
 
-  <canvas id="space"></canvas>
+  <canvas id="rain"></canvas>
 
-  <div class="nebula one"></div>
-  <div class="nebula two"></div>
-  <div class="nebula three"></div>
+  <span class="float-sym">&lt;/&gt;</span>
+  <span class="float-sym">{ }</span>
+  <span class="float-sym">=&gt;</span>
+  <span class="float-sym">;</span>
+  <span class="float-sym">#!</span>
+  <span class="float-sym">[ ]</span>
 
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
+  <div class="wrap">
+    <h1 class="headline" data-text="< WORK IN PROGRESS />">&lt;&nbsp;WORK&nbsp;<span class="accent">IN&nbsp;PROGRESS</span>&nbsp;/&gt;</h1>
 
-  <div class="orbit-system">
-    <div class="orbit o1"><div class="planet ice"></div></div>
-    <div class="orbit o2"><div class="planet mars"></div></div>
-    <div class="orbit o3"><div class="planet ringed"></div></div>
+    <div class="terminal">
+      <div class="term-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="title">naveen@gnaveenkumar.com: ~/website — bash</span>
+      </div>
+      <div class="term-body" id="term"></div>
+    </div>
   </div>
 
-  <!-- Astronaut -->
-  <svg class="astronaut" viewBox="0 0 200 220" aria-hidden="true">
-    <!-- tether -->
-    <path d="M20 10 Q 60 60 92 92" stroke="rgba(255,255,255,0.35)" stroke-width="2" fill="none" stroke-dasharray="5 6"/>
-    <!-- backpack -->
-    <rect x="55" y="70" width="90" height="95" rx="18" fill="#c9d6e5"/>
-    <!-- body -->
-    <ellipse cx="100" cy="130" rx="42" ry="52" fill="#f2f6fa"/>
-    <!-- arms -->
-    <path d="M62 115 Q 30 130 38 160 Q 44 172 56 164 Q 70 150 74 138 Z" fill="#e3eaf2"/>
-    <path d="M138 115 Q 172 128 166 158 Q 160 172 148 164 Q 132 150 128 138 Z" fill="#e3eaf2"/>
-    <!-- legs -->
-    <path d="M80 172 Q 74 200 84 208 Q 96 214 98 198 L 96 172 Z" fill="#e3eaf2"/>
-    <path d="M120 172 Q 128 200 118 208 Q 106 214 104 198 L 106 172 Z" fill="#e3eaf2"/>
-    <!-- helmet -->
-    <circle cx="100" cy="78" r="38" fill="#f2f6fa"/>
-    <circle cx="100" cy="78" r="30" fill="#0a1a3c"/>
-    <ellipse cx="90" cy="68" rx="10" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-25 90 68)"/>
-    <!-- chest panel -->
-    <rect x="86" y="118" width="28" height="18" rx="4" fill="#9fb3c8"/>
-    <circle cx="93" cy="127" r="3" fill="#ff5d5d"/>
-    <circle cx="102" cy="127" r="3" fill="#ffd166"/>
-    <circle cx="110" cy="127" r="3" fill="#38ef7d"/>
-  </svg>
-
-  <!-- Rocket -->
-  <svg class="rocket" viewBox="0 0 120 220" aria-hidden="true">
-    <g class="flame">
-      <path d="M60 170 Q 45 200 60 218 Q 75 200 60 170 Z" fill="#ffb347"/>
-      <path d="M60 176 Q 52 196 60 210 Q 68 196 60 176 Z" fill="#ff5e3a"/>
-    </g>
-    <path d="M60 5 Q 92 55 88 120 L 32 120 Q 28 55 60 5 Z" fill="#e8edf3"/>
-    <path d="M60 5 Q 76 33 82 70 L 38 70 Q 44 33 60 5 Z" fill="#ff4d6d"/>
-    <circle cx="60" cy="92" r="14" fill="#0a1a3c" stroke="#9fb3c8" stroke-width="4"/>
-    <path d="M32 118 L 10 158 L 34 148 Z" fill="#ff4d6d"/>
-    <path d="M88 118 L 110 158 L 86 148 Z" fill="#ff4d6d"/>
-    <rect x="40" y="120" width="40" height="18" rx="6" fill="#c9d6e5"/>
-  </svg>
-
-  <main class="content">
-    <div class="domain-badge">gnaveenkumar.com</div>
-
-    <h1>
-      Work<br />
-      <span class="wave" id="wave-text">In&nbsp;Progress</span>
-    </h1>
-
-    <p class="tagline">
-      <span class="typing">A new universe is taking shape here…</span><br />
-      Stars aligning. Engines warming. Almost time. 🚀
-    </p>
-
-    <div class="progress-wrap">
-      <div class="progress-label">
-        <span>Building</span>
-        <span id="progress-pct">0%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-    </div>
-
-    <div class="status">
-      <span class="dot"></span> Systems Online — Launching Soon
-    </div>
-  </main>
-
-  <footer>© <span id="year"></span> gnaveenkumar.com · made among the stars ✨</footer>
+  <div class="statusbar">
+    <span class="item"><span class="live"></span> building…</span>
+    <span class="item hide-sm">⎇ main*</span>
+    <span class="item hide-sm">UTF-8</span>
+    <span class="grow"></span>
+    <span class="item hide-sm">Ln 42, Col 7</span>
+    <span class="item">localhost:9000</span>
+    <span class="item">© <span id="year"></span> gnaveenkumar.com</span>
+  </div>
 
 <script>
-  // ---------- Twinkling parallax starfield ----------
-  const canvas = document.getElementById('space');
+  // ---------------- Code rain ----------------
+  const canvas = document.getElementById('rain');
   const ctx = canvas.getContext('2d');
-  let stars = [], w, h;
-  let mouseX = 0, mouseY = 0;
+  const GLYPHS = '01<>{}[]/=;()#$&*+-!?abcdefx';
+  let cols = [], fontSize = 14, W, H;
 
-  function resize() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-    const count = Math.min(420, Math.floor((w * h) / 3200));
-    stars = Array.from({ length: count }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: Math.random() * 1.6 + 0.3,
-      depth: Math.random() * 0.9 + 0.1,          // parallax layer
-      tw: Math.random() * Math.PI * 2,           // twinkle phase
-      tws: Math.random() * 0.05 + 0.01,          // twinkle speed
-      vy: Math.random() * 0.06 + 0.01            // slow drift
-    }));
+  function sizeRain() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    const n = Math.floor(W / fontSize);
+    cols = Array.from({ length: n }, () => Math.random() * -H / fontSize);
   }
-  window.addEventListener('resize', resize);
-  resize();
+  window.addEventListener('resize', sizeRain);
+  sizeRain();
 
-  window.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / w - 0.5) * 2;
-    mouseY = (e.clientY / h - 0.5) * 2;
-  });
-
-  function draw() {
-    ctx.clearRect(0, 0, w, h);
-    for (const s of stars) {
-      s.tw += s.tws;
-      s.y += s.vy;
-      if (s.y > h + 2) s.y = -2;
-      const alpha = 0.35 + Math.abs(Math.sin(s.tw)) * 0.65;
-      const px = s.x + mouseX * 22 * s.depth;
-      const py = s.y + mouseY * 22 * s.depth;
-      ctx.beginPath();
-      ctx.arc(px, py, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.fill();
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(10, 14, 20, 0.12)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < cols.length; i++) {
+      const ch = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      ctx.fillStyle = Math.random() > 0.94 ? '#4dd0e1' : '#3ddc84';
+      ctx.fillText(ch, i * fontSize, cols[i] * fontSize);
+      cols[i] = (cols[i] * fontSize > H && Math.random() > 0.975) ? 0 : cols[i] + 1;
     }
-    requestAnimationFrame(draw);
-  }
-  draw();
+  }, 60);
 
-  // ---------- Per-letter wave for "IN PROGRESS" ----------
-  const waveEl = document.getElementById('wave-text');
-  waveEl.innerHTML = waveEl.textContent
-    .split('')
-    .map((ch, i) => ch.trim() === ''
-      ? '&nbsp;'
-      : `<span style="animation-delay:${i * 0.07}s">${ch}</span>`)
-    .join('');
+  // ---------------- Terminal script ----------------
+  const term = document.getElementById('term');
+  const PROMPT = '<span class="prompt">naveen@web</span><span class="out">:</span><span class="info">~/website</span><span class="prompt">$ </span>';
 
-  // ---------- Progress counter ----------
-  const TARGET = 72;
-  const pctEl = document.getElementById('progress-pct');
-  const start = performance.now();
-  function countUp(now) {
-    const t = Math.min((now - start - 1000) / 2600, 1); // sync with fillGrow (1s delay, 2.6s)
-    if (t < 0) { requestAnimationFrame(countUp); return; }
-    const eased = 1 - Math.pow(1 - t, 3);
-    pctEl.textContent = Math.round(eased * TARGET) + '%';
-    if (t < 1) requestAnimationFrame(countUp);
+  // step types: cmd (typed), out (printed), progress (animated bar), spinner, pause, clearcursor
+  const SCRIPT = [
+    { t: 'cmd',  text: 'whoami' },
+    { t: 'out',  html: '<span class="accent2">naveen kumar</span> <span class="out">— engineer · builder · caffeine-powered</span>' },
+    { t: 'pause', ms: 500 },
+
+    { t: 'cmd',  text: 'git clone https://github.com/naveen/next-big-thing.git' },
+    { t: 'out',  html: '<span class="out">Cloning into </span><span class="info">\'gnaveenkumar.com\'</span><span class="out">…</span>' },
+    { t: 'out',  html: '<span class="out">remote: counting ideas: 100% (∞/∞), done.</span>' },
+    { t: 'pause', ms: 450 },
+
+    { t: 'cmd',  text: 'npm install ambition@latest' },
+    { t: 'spinner', ms: 1500, label: 'resolving dependencies' },
+    { t: 'out',  html: '<span class="ok">+ ambition@2.0.26</span> <span class="out">added 1 package (and removed all excuses)</span>' },
+    { t: 'pause', ms: 500 },
+
+    { t: 'cmd',  text: 'npm run build' },
+    { t: 'out',  html: '<span class="out">&gt; gnaveenkumar.com@1.0.0 build</span>' },
+    { t: 'progress', ms: 2600, label: 'compiling awesomeness' },
+    { t: 'out',  html: '<span class="warn">WARN</span> <span class="out">greatness takes a little time — please stand by</span>' },
+    { t: 'out',  html: '<span class="ok">✔</span> <span class="out">modules bundled</span>   <span class="ok">✔</span> <span class="out">pixels polished</span>   <span class="ok">✔</span> <span class="out">bugs politely escorted out</span>' },
+    { t: 'pause', ms: 550 },
+
+    { t: 'cmd',  text: 'systemctl status website' },
+    { t: 'out',  html: '<span class="ok">●</span> website.service — <span class="warn">WORK IN PROGRESS</span>' },
+    { t: 'out',  html: '<span class="out">   Active: </span><span class="ok">activating</span><span class="out"> (building) since today — ETA: soon™</span>' },
+    { t: 'pause', ms: 550 },
+
+    { t: 'cmd',  text: 'echo "$MESSAGE"' },
+    { t: 'out',  html: '<span class="info">Something great is compiling here. Come back for v1.0 🚀</span>' },
+  ];
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const scroll = () => { term.scrollTop = term.scrollHeight; };
+
+  function newLine(html = '') {
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.innerHTML = html;
+    term.appendChild(div);
+    scroll();
+    return div;
   }
-  requestAnimationFrame(countUp);
+
+  async function typeCmd(text) {
+    const line = newLine(PROMPT);
+    const span = document.createElement('span');
+    span.className = 'cmd';
+    line.appendChild(span);
+    const cur = document.createElement('span');
+    cur.className = 'cursor';
+    line.appendChild(cur);
+    for (const ch of text) {
+      span.textContent += ch;
+      scroll();
+      await sleep(28 + Math.random() * 55);
+    }
+    await sleep(300);
+    cur.remove();
+  }
+
+  async function runProgress(ms, label) {
+    const line = newLine();
+    const width = 24, steps = 30;
+    for (let i = 0; i <= steps; i++) {
+      const filled = Math.round((i / steps) * width);
+      const pct = Math.round((i / steps) * 100);
+      line.innerHTML =
+        '<span class="out">' + label + ' </span>' +
+        '<span class="ok">[' + '█'.repeat(filled) + '░'.repeat(width - filled) + ']</span>' +
+        '<span class="info"> ' + pct + '%</span>';
+      scroll();
+      await sleep(ms / steps);
+    }
+  }
+
+  async function runSpinner(ms, label) {
+    const frames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+    const line = newLine();
+    const t0 = Date.now();
+    let i = 0;
+    while (Date.now() - t0 < ms) {
+      line.innerHTML = '<span class="info">' + frames[i++ % frames.length] + '</span><span class="out"> ' + label + '…</span>';
+      await sleep(70);
+    }
+    line.innerHTML = '<span class="ok">✔</span><span class="out"> ' + label + ' — done</span>';
+    scroll();
+  }
+
+  async function run() {
+    await sleep(900);
+    for (const step of SCRIPT) {
+      if (step.t === 'cmd')      await typeCmd(step.text);
+      else if (step.t === 'out')      { newLine(step.html); await sleep(180); }
+      else if (step.t === 'pause')    await sleep(step.ms);
+      else if (step.t === 'progress') await runProgress(step.ms, step.label);
+      else if (step.t === 'spinner')  await runSpinner(step.ms, step.label);
+    }
+    // resting prompt with blinking cursor
+    newLine(PROMPT + '<span class="cursor"></span>');
+  }
+  run();
 
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
